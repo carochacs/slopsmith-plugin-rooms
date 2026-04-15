@@ -83,26 +83,3 @@
     </div>
 </div>
 
-<script>
-    // Link room setting changes to the room state
-    if (!window.rooms.updateSettings) {
-        window.rooms.updateSettings = function() {
-            if (!this.isHost || !this.ws) return;
-            const settings = {
-                voting: document.getElementById('rooms-setting-voting').checked,
-                vote_timer: parseInt(document.getElementById('rooms-setting-timer').value),
-                max_players: parseInt(document.getElementById('rooms-setting-max').value),
-                guest_transport: document.getElementById('rooms-setting-guest-transport').checked,
-                auto_advance: document.getElementById('rooms-setting-auto-advance').checked,
-                auto_layout: document.getElementById('rooms-setting-auto-layout').checked,
-                similarity_mode: document.getElementById('rooms-setting-similarity').value
-            };
-            this.ws.send(JSON.stringify({
-                type: 'settings.update',
-                settings: settings
-            }));
-            // Also persist locally for next room creation
-            localStorage.setItem('rooms-default-settings', JSON.stringify(settings));
-        };
-    }
-</script>

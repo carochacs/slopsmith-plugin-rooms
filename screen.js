@@ -32,6 +32,7 @@ window.rooms = {
     reconnectTimer: null,
     suggestions: [],
     suggestMode: false,
+    lobbyRefreshInterval: null,
 
     init() {
         const nameInput = document.getElementById('rooms-player-name');
@@ -48,6 +49,9 @@ window.rooms = {
         window.showScreen = (id) => {
             if (id === 'plugin-rooms' && !this.code) {
                 this.refreshRoomList();
+                this.startLobbyRefresh();
+            } else {
+                this.stopLobbyRefresh();
             }
             if (id === 'plugin-rooms' && this.code) {
                 this.refreshStageUI();
@@ -287,6 +291,18 @@ window.rooms = {
         });
     },
 
+    startLobbyRefresh() {
+        this.stopLobbyRefresh();
+        this.lobbyRefreshInterval = setInterval(() => this.refreshRoomList(), 5000);
+    },
+
+    stopLobbyRefresh() {
+        if (this.lobbyRefreshInterval) {
+            clearInterval(this.lobbyRefreshInterval);
+            this.lobbyRefreshInterval = null;
+        }
+    },
+
     async refreshRoomList() {
         try {
             const resp = await fetch('/api/plugins/rooms/list');
@@ -323,7 +339,12 @@ window.rooms = {
 
     async createRoom() {
         try {
-            const resp = await fetch('/api/plugins/rooms/create', { method: 'POST' });
+            const saved = localStorage.getItem('rooms-default-settings');
+            const resp = await fetch('/api/plugins/rooms/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: saved ? JSON.parse(saved) : {} })
+            });
             const data = await resp.json();
             this.isHost = true;
             this.connect(data.code);
@@ -332,12 +353,22 @@ window.rooms = {
         }
     },
 
+    joinByCode() {
+        const input = document.getElementById('rooms-join-code');
+        if (!input) return;
+        const code = input.value.trim().toUpperCase();
+        if (code.length !== 4) return;
+        input.value = '';
+        this.joinRoom(code);
+    },
+
     joinRoom(code) {
         this.isHost = false;
         this.connect(code);
     },
 
     connect(code) {
+        this.stopLobbyRefresh();
         if (this.ws) this.ws.close();
 
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -578,6 +609,14 @@ window.rooms = {
                 this.reconnectAttempts = 3; // prevent reconnect
                 alert('You have been kicked from the room: ' + (msg.reason || 'No reason provided'));
                 this.leaveRoom(false);
+                break;
+            case 'host.migrated':
+                if (msg.new_host_id === this.playerId) {
+                    this.isHost = true;
+                    document.getElementById('rooms-settings-box').classList.remove('hidden');
+                }
+                this.updateTransportUI();
+                this.renderRoster();
                 break;
             case 'queue.update':
                 this.suggestions = msg.suggestions || [];
@@ -992,6 +1031,21 @@ window.rooms = {
 
         const mainHighway = document.getElementById('highway');
         if (mainHighway) mainHighway.style.display = '';
+    },
+
+    updateSettings() {
+        if (!this.isHost || !this.ws) return;
+        const settings = {
+            voting: document.getElementById('rooms-setting-voting').checked,
+            vote_timer: parseInt(document.getElementById('rooms-setting-timer').value),
+            max_players: parseInt(document.getElementById('rooms-setting-max').value),
+            guest_transport: document.getElementById('rooms-setting-guest-transport').checked,
+            auto_advance: document.getElementById('rooms-setting-auto-advance').checked,
+            auto_layout: document.getElementById('rooms-setting-auto-layout').checked,
+            similarity_mode: document.getElementById('rooms-setting-similarity').value
+        };
+        this.ws.send(JSON.stringify({ type: 'settings.update', settings }));
+        localStorage.setItem('rooms-default-settings', JSON.stringify(settings));
     },
 
     showSyncDebug(info) {

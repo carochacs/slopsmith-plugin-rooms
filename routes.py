@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from typing import Dict, List, Optional
 import uuid
 import random
@@ -170,6 +170,14 @@ class Room:
         final = pool[:5]
         return final
 
+def start_vote_timer(room: Room, code: str):
+    """Cancel existing vote timer and start a new one."""
+    if room.vote_task: room.vote_task.cancel()
+    async def _timeout(rid, delay):
+        await asyncio.sleep(delay)
+        if rid in rooms: await resolve_vote(rooms[rid], rid)
+    room.vote_task = asyncio.create_task(_timeout(code, room.settings["vote_timer"]))
+
 async def resolve_vote(room: Room, code: str):
     """Resolve current vote: tally votes, pick winner, broadcast result."""
     tally = {}
@@ -202,11 +210,20 @@ def setup(app: FastAPI, context: dict):
         return [r.to_summary() for r in rooms.values()]
 
     @app.post("/api/plugins/rooms/create")
-    async def create_room():
+    async def create_room(request: Request):
         code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
         while code in rooms:
             code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-        rooms[code] = Room(code)
+        room = Room(code)
+        try:
+            body = await request.json()
+            saved = body.get("settings", {})
+            allowed = {"voting", "vote_timer", "max_players", "guest_transport", "auto_advance", "auto_layout", "similarity_mode"}
+            for k, v in saved.items():
+                if k in allowed:
+                    room.settings[k] = v
+        except: pass
+        rooms[code] = room
         return {"code": code}
 
     @app.websocket("/ws/plugins/rooms/{code}")
@@ -372,9 +389,7 @@ def setup(app: FastAPI, context: dict):
 
                 elif msg_type == "queue.vote" and player.is_host and room.suggestions:
                     # Start vote using player suggestions as candidates
-                    if room.vote_task: room.vote_task.cancel()
                     suggested = [{"filename": s["filename"], "title": s["title"], "artist": s["artist"], "tag": f"Pick by {s['suggested_by_name']}"} for s in room.suggestions[:5]]
-                    # Fill remaining slots using same candidate logic as post-song voting
                     fillers = room.get_candidates()
                     existing = {c["filename"] for c in suggested}
                     for f in fillers:
@@ -386,11 +401,7 @@ def setup(app: FastAPI, context: dict):
                     room.votes = {}
                     room.vote_started_at = time.time()
                     await broadcast(room, {"type": "vote.start", "candidates": room.candidates, "timer": room.settings["vote_timer"]})
-
-                    async def _vote_timeout(rid, delay):
-                        await asyncio.sleep(delay)
-                        if rid in rooms: await resolve_vote(rooms[rid], rid)
-                    room.vote_task = asyncio.create_task(_vote_timeout(code, room.settings["vote_timer"]))
+                    start_vote_timer(room, code)
 
                 elif msg_type == "vote.request" and player.is_host:
                     # Auto-advance: solo host + auto_advance + song already played → skip vote
@@ -401,16 +412,11 @@ def setup(app: FastAPI, context: dict):
                             await broadcast(room, {"type": "vote.result", "winner": pick})
                         continue
 
-                    if room.vote_task: room.vote_task.cancel()
                     room.candidates = room.get_candidates()
                     room.votes = {}
                     room.vote_started_at = time.time()
                     await broadcast(room, {"type": "vote.start", "candidates": room.candidates, "timer": room.settings["vote_timer"]})
-                    
-                    async def _vote_timeout2(rid, delay):
-                        await asyncio.sleep(delay)
-                        if rid in rooms: await resolve_vote(rooms[rid], rid)
-                    room.vote_task = asyncio.create_task(_vote_timeout2(code, room.settings["vote_timer"]))
+                    start_vote_timer(room, code)
 
                 elif msg_type == "vote.cast":
                     room.votes[player_id] = data.get("index")
@@ -422,7 +428,6 @@ def setup(app: FastAPI, context: dict):
                     if len(room.votes) == len(room.players):
                         # Unanimous redraw
                         if all(v == "__redraw__" for v in room.votes.values()):
-                            if room.vote_task: room.vote_task.cancel()
                             # Keep user-suggested picks, only redraw filler slots
                             kept = [c for c in room.candidates if c["tag"].startswith("Pick by ")]
                             shown = set(c["filename"] for c in room.candidates)
@@ -438,11 +443,7 @@ def setup(app: FastAPI, context: dict):
                             room.votes = {}
                             room.vote_started_at = time.time()
                             await broadcast(room, {"type": "vote.start", "candidates": room.candidates, "timer": room.settings["vote_timer"]})
-
-                            async def _vote_timeout3(rid, delay):
-                                await asyncio.sleep(delay)
-                                if rid in rooms: await resolve_vote(rooms[rid], rid)
-                            room.vote_task = asyncio.create_task(_vote_timeout3(code, room.settings["vote_timer"]))
+                            start_vote_timer(room, code)
 
                 elif msg_type == "player.kick" and player.is_host:
                     target_id = data.get("player_id")
@@ -460,14 +461,18 @@ def setup(app: FastAPI, context: dict):
         finally:
             if player and player_id in room.players:
                 if player.is_host:
-                    # Host disconnect → close room immediately
-                    await broadcast(room, {"type": "room.closed", "reason": "Host left the room"})
-                    # Close all player websockets
-                    for p_id, p in list(room.players.items()):
-                        if p_id != player_id:
-                            try: await p.ws.close()
-                            except: pass
-                    if code in rooms: del rooms[code]
+                    del room.players[player_id]
+                    if not room.players:
+                        if code in rooms: del rooms[code]
+                    else:
+                        # Promote oldest guest to host
+                        new_host = min(room.players.values(), key=lambda p: p.joined_at)
+                        new_host.is_host = True
+                        migrate_msg = {"type": "chat.message", "text": f"{player.name} left. {new_host.name} is now host.", "is_system": True, "time": time.time()}
+                        room.chat_history.append(migrate_msg)
+                        await broadcast(room, migrate_msg)
+                        await broadcast(room, {"type": "host.migrated", "new_host_id": new_host.id})
+                        await broadcast(room, {"type": "roster.update", "players": [p.to_dict() for p in room.players.values()]})
                 else:
                     async def delayed_cleanup(rid, pid):
                         await asyncio.sleep(10)
