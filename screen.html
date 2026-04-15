@@ -1,0 +1,140 @@
+<div class="max-w-7xl mx-auto px-6 pt-24 pb-16">
+    <!-- Lobby View -->
+    <div id="rooms-lobby" class="space-y-8">
+        <div class="flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-white">Multiplayer Rooms</h1>
+            <div class="flex gap-4">
+                <input type="text" id="rooms-player-name" placeholder="Your Name" 
+                    class="bg-dark-700 border border-gray-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-accent transition" />
+            </div>
+        </div>
+
+        <div id="rooms-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Active rooms injected here -->
+        </div>
+
+        <div class="border-t border-gray-800 pt-8 mt-8 flex flex-col items-center">
+            <p class="text-gray-500 mb-4 text-sm">Don't see a room you like? Start your own!</p>
+            <button onclick="rooms.createRoom()" 
+                class="bg-accent hover:bg-accent-light text-white font-semibold py-3 px-8 rounded-2xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                + Start New Room
+            </button>
+        </div>
+    </div>
+
+    <!-- Room View (hidden) -->
+    <div id="rooms-view" class="hidden">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Main Stage -->
+            <div class="flex-1 space-y-6">
+                <div class="flex items-center justify-between bg-dark-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-accent rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                            <span id="rooms-display-code"></span>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white" id="rooms-current-song-title">Lobby</h2>
+                            <p class="text-gray-400 text-sm" id="rooms-current-song-artist">Waiting for host to pick a song...</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="rooms-btn-rejoin" onclick="rooms.rejoinSong()" class="hidden bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl transition shadow-lg font-medium">
+                            Rejoin Song
+                        </button>
+                        <button id="rooms-btn-pick" onclick="rooms.pickSong()" class="hidden bg-accent hover:bg-accent-light text-white px-4 py-2 rounded-xl transition shadow-lg font-medium">
+                            Pick Song
+                        </button>
+                        <button onclick="rooms.leaveRoom()" class="bg-dark-600 hover:bg-red-900/40 text-gray-300 hover:text-red-300 px-4 py-2 rounded-xl transition border border-transparent hover:border-red-900/50">
+                            Leave Room
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Shared Highway / Voting placeholder -->
+                <div id="rooms-stage" class="aspect-video bg-dark-900/50 border border-gray-800 rounded-3xl flex items-center justify-center relative overflow-hidden">
+                    <div id="rooms-vote-overlay" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-8">
+                        <div class="max-w-4xl w-full text-center">
+                            <h2 class="text-2xl font-bold text-white mb-2">Vote for Next Track</h2>
+                            <div id="rooms-vote-timer" class="text-accent font-mono text-xl mb-8">00:15</div>
+                            
+                            <div id="rooms-vote-candidates" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                <!-- 5 candidate cards injected here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="rooms-empty-stage" class="w-full h-full flex flex-col items-center justify-center p-6">
+                        <div id="rooms-queue-empty" class="text-center text-gray-600">
+                            <svg class="w-16 h-16 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+                            <p class="text-lg font-medium opacity-50 mb-2">Nothing playing yet</p>
+                            <p class="text-sm text-gray-500 mb-4">Suggest songs for everyone to vote on!</p>
+                        </div>
+                        <div id="rooms-queue-list" class="w-full max-w-2xl space-y-2 mb-4 overflow-y-auto max-h-[200px] custom-scrollbar"></div>
+                        <div class="flex gap-3">
+                            <button onclick="rooms.suggestSong()" class="bg-accent hover:bg-accent-light text-white font-semibold py-2 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                                + Suggest a Song
+                            </button>
+                            <button id="rooms-btn-start-vote" onclick="rooms.startQueueVote()" class="hidden bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-6 rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                                Start Vote
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roster Sidebar -->
+            <div class="w-full lg:w-72 space-y-6">
+                <div class="bg-dark-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Players</h3>
+                    <div id="rooms-roster" class="space-y-3">
+                        <!-- Players injected here -->
+                    </div>
+                </div>
+
+                <div id="rooms-settings-box" class="hidden bg-dark-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Room Settings</h3>
+                    <!-- Quick settings or link to full settings -->
+                    <button onclick="showScreen('settings')" class="w-full text-center text-xs text-accent hover:text-accent-light py-2">Open Full Settings</button>
+                </div>
+
+                <!-- Chat Box -->
+                <div class="bg-dark-800 border border-gray-700 rounded-2xl flex flex-col shadow-xl overflow-hidden h-[400px]">
+                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest p-6 pb-2">Chat</h3>
+                    <div id="rooms-chat-messages" class="flex-1 overflow-y-auto p-6 pt-2 space-y-2 text-sm custom-scrollbar">
+                        <!-- Messages injected here -->
+                    </div>
+                    <div class="p-4 bg-dark-900/50 border-t border-gray-700/50">
+                        <form onsubmit="rooms.sendChat(event)" class="flex gap-2">
+                            <input type="text" id="rooms-chat-input" placeholder="Say something..." 
+                                class="flex-1 bg-dark-700 border border-gray-600 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-accent transition" autocomplete="off" />
+                            <button type="submit" class="p-1.5 bg-accent hover:bg-accent-light text-white rounded-lg transition shadow-lg rotate-90">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .room-card {
+        @apply bg-dark-800 border border-gray-700 rounded-2xl p-6 shadow-lg hover:border-accent transition cursor-pointer;
+    }
+    .player-row {
+        @apply flex items-center gap-3 p-2 rounded-xl bg-dark-700/50 border border-gray-700/50;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #181830;
+        border-radius: 10px;
+    }
+    .chat-msg-system {
+        @apply text-[10px] text-gray-500 italic text-center py-1;
+    }
+</style>

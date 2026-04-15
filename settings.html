@@ -1,0 +1,108 @@
+<div class="space-y-6">
+    <div class="bg-dark-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            Room Defaults
+        </h2>
+        
+        <div class="space-y-4">
+            <div class="flex items-center justify-between p-4 bg-dark-700/50 rounded-xl border border-gray-700">
+                <div>
+                    <p class="text-white font-medium">Track Voting</p>
+                    <p class="text-xs text-gray-500">Let players vote on the next track from similar artists.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="rooms-setting-voting" class="sr-only peer" checked onchange="rooms.updateSettings()">
+                    <div class="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 bg-dark-700/50 rounded-xl border border-gray-700">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Vote Timer</label>
+                    <select id="rooms-setting-timer" class="w-full bg-dark-600 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent" onchange="rooms.updateSettings()">
+                        <option value="10">10 Seconds</option>
+                        <option value="15" selected>15 Seconds</option>
+                        <option value="20">20 Seconds</option>
+                        <option value="30">30 Seconds</option>
+                    </select>
+                </div>
+                <div class="p-4 bg-dark-700/50 rounded-xl border border-gray-700">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Max Players</label>
+                    <select id="rooms-setting-max" class="w-full bg-dark-600 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent" onchange="rooms.updateSettings()">
+                        <option value="2">2 Players</option>
+                        <option value="4">4 Players</option>
+                        <option value="8" selected>8 Players</option>
+                        <option value="0">Unlimited</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-4 bg-dark-700/50 rounded-xl border border-gray-700">
+                <div>
+                    <p class="text-white font-medium">Guest Transport</p>
+                    <p class="text-xs text-gray-500">Allow guests to play/pause/seek for everyone.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="rooms-setting-guest-transport" class="sr-only peer" onchange="rooms.updateSettings()">
+                    <div class="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                </label>
+            </div>
+
+            <div class="flex items-center justify-between p-4 bg-dark-700/50 rounded-xl border border-gray-700">
+                <div>
+                    <p class="text-white font-medium">Auto-Advance</p>
+                    <p class="text-xs text-gray-500">When playing solo, automatically pick the next similar track.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="rooms-setting-auto-advance" class="sr-only peer" checked onchange="rooms.updateSettings()">
+                    <div class="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                </label>
+            </div>
+
+            <div class="flex items-center justify-between p-4 bg-dark-700/50 rounded-xl border border-gray-700">
+                <div>
+                    <p class="text-white font-medium">Auto-Layout</p>
+                    <p class="text-xs text-gray-500">Automatically arrange highway panels when guests join.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="rooms-setting-auto-layout" class="sr-only peer" checked onchange="rooms.updateSettings()">
+                    <div class="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                </label>
+            </div>
+
+            <div class="p-4 bg-dark-700/50 rounded-xl border border-gray-700">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Similarity Mode</label>
+                <select id="rooms-setting-similarity" class="w-full bg-dark-600 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent" onchange="rooms.updateSettings()">
+                    <option value="deezer" selected>Deezer (online similar artists)</option>
+                    <option value="local">Local Only (same artist/tuning/favorites)</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-2">How vote candidates are sourced. Local works offline.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Link room setting changes to the room state
+    if (!window.rooms.updateSettings) {
+        window.rooms.updateSettings = function() {
+            if (!this.isHost || !this.ws) return;
+            const settings = {
+                voting: document.getElementById('rooms-setting-voting').checked,
+                vote_timer: parseInt(document.getElementById('rooms-setting-timer').value),
+                max_players: parseInt(document.getElementById('rooms-setting-max').value),
+                guest_transport: document.getElementById('rooms-setting-guest-transport').checked,
+                auto_advance: document.getElementById('rooms-setting-auto-advance').checked,
+                auto_layout: document.getElementById('rooms-setting-auto-layout').checked,
+                similarity_mode: document.getElementById('rooms-setting-similarity').value
+            };
+            this.ws.send(JSON.stringify({
+                type: 'settings.update',
+                settings: settings
+            }));
+            // Also persist locally for next room creation
+            localStorage.setItem('rooms-default-settings', JSON.stringify(settings));
+        };
+    }
+</script>

@@ -1,0 +1,13 @@
+{
+  "id": "rooms",
+  "name": "Rooms",
+  "nav": {
+    "label": "Rooms"
+  },
+  "screen": "screen.html",
+  "script": "screen.js",
+  "routes": "routes.py",
+  "settings": {
+    "html": "settings.html"
+  }
+}
