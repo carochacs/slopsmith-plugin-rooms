@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from typing import Dict, List, Optional
+import logging
 import uuid
 import random
 import string
@@ -9,6 +10,8 @@ import time
 import urllib.request
 import urllib.parse
 from functools import lru_cache
+
+log = logging.getLogger("slopsmith.plugin.rooms")
 
 # Deezer logic moved here to be self-contained in rooms plugin
 @lru_cache(maxsize=100)
@@ -35,7 +38,7 @@ def get_deezer_related(artist_name: str) -> List[str]:
         
         return [a["name"] for a in data2.get("data", [])]
     except Exception as e:
-        print(f"[Rooms] Deezer error for '{artist_name}': {e}")
+        log.debug("Deezer error for %r: %s", artist_name, e)
         return []
 
 # Room state
@@ -317,16 +320,16 @@ def setup(app: FastAPI, context: dict):
                 elif msg_type == "song.resync":
                     # Player adjusted sync — restart ready check for everyone
                     room.ready_players = set()
-                    print(f"[Rooms:Sync] {player.name} requested resync")
+                    log.debug("Sync: %s requested resync", player.name)
                     await broadcast(room, {"type": "song.resync"})
 
                 elif msg_type == "song.ready":
                     room.ready_players.add(player_id)
-                    print(f"[Rooms:Sync] {player.name} ready ({len(room.ready_players)}/{len(room.players)})")
+                    log.debug("Sync: %s ready (%d/%d)", player.name, len(room.ready_players), len(room.players))
                     if len(room.ready_players) >= len(room.players):
                         room.transport_state["playing"] = True
                         start_at = time.time() * 1000 + 150
-                        print(f"[Rooms:Sync] All ready — broadcasting song.start at {start_at:.1f} (server now={time.time()*1000:.1f})")
+                        log.debug("Sync: all ready — song.start at %.1f", start_at)
                         await broadcast(room, {"type": "song.start", "start_at": start_at})
 
                 elif msg_type.startswith("transport.") and (player.is_host or room.settings.get("guest_transport")):
@@ -457,7 +460,7 @@ def setup(app: FastAPI, context: dict):
                         await broadcast(room, {"type": "roster.update", "players": [p.to_dict() for p in room.players.values()]})
 
         except WebSocketDisconnect: pass
-        except Exception as e: print(f"[Rooms] WS Error: {e}")
+        except Exception as e: log.exception("WS error: %s", e)
         finally:
             if player and player_id in room.players:
                 if player.is_host:
