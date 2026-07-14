@@ -1,6 +1,6 @@
 # Slopsmith Plugin: Rooms
 
-A plugin for [Slopsmith](https://github.com/byrongamatos/slopsmith) that turns practice into a multiplayer session. Create a room, share the code with friends, and play songs together in sync — with voting, chat, and smart song suggestions.
+A plugin for [Slopsmith](https://github.com/carochacs/slopsmith) that turns practice into a multiplayer session. Create a room, share the code with friends, and play songs together in sync — with voting, chat, and smart song suggestions.
 
 ## Features
 
@@ -41,7 +41,7 @@ A plugin for [Slopsmith](https://github.com/byrongamatos/slopsmith) that turns p
 **Docker (web version)**
 ```bash
 cd /path/to/slopsmith/plugins
-git clone https://github.com/byrongamatos/slopsmith-plugin-rooms.git rooms
+git clone https://github.com/carochacs/slopsmith-plugin-rooms.git rooms
 docker compose restart
 ```
 
