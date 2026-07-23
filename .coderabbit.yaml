@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit config for the Slopsmith Rooms (multiplayer) plugin.
+
+language: en-US
+early_access: false
+
+tone_instructions: >-
+  This repo is developed by a solo maintainer working with Claude Code
+  agents. Prioritize correctness in the WebSocket room/voting/sync state
+  machine (host migration, ready-check countdown, unanimous redraw) over
+  style nits — that's where real bugs in this plugin tend to live.
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/*.min.js"
+    - "!**/node_modules/**"
+  path_instructions:
+    - path: "routes.py"
+      instructions: |
+        FastAPI backend for a Slopsmith plugin — exports
+        `setup(app, context)`. All output goes through `context["log"]`,
+        never `print()`. Sibling modules must be loaded via
+        `context["load_sibling"](name)`, not a bare `import`. WebSocket
+        handlers wrap receive loops in try/except `WebSocketDisconnect` by
+        convention — flag a handler missing that, not the try/except
+        pattern itself. Outbound calls to `api.deezer.com` (Similar
+        Artist / Same Vibe suggestions) are optional and must fail
+        gracefully to a local-only fallback — flag it only if a Deezer
+        failure propagates as an unhandled exception rather than a
+        fallback path. Minimal docstrings are the house style.
+    - path: "screen.js"
+      instructions: |
+        Vanilla JS IIFE, loaded as a plain `<script>` tag — no bundler, no
+        framework, no build step; don't suggest one. Do flag: room/vote
+        state not reconciled after a WebSocket reconnect, and the
+        `window.playSong` wrapper skipping `await` on the original.
+    - path: "**/*.md"
+      instructions: |
+        Documentation. Don't request docstring coverage in code based on
+        gaps here.
+
+chat:
+  auto_reply: true
